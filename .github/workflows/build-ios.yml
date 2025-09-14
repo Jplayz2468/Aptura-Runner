@@ -1,0 +1,47 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:  # manual trigger from Actions tab
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # Step 1: checkout this CI repo
+      - name: Checkout CI repo
+        uses: actions/checkout@v3
+
+      # Step 2: clone your private app repo with token
+      - name: Clone private app repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/Jplayz2468/Aptura.git app
+          cd app
+          git fetch --all
+          git checkout main
+
+      # Step 3: install Node (needed for Expo/EAS)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # Step 4: install EAS CLI + dependencies
+      - name: Install dependencies
+        run: |
+          npm install -g eas-cli
+          cd app
+          npm install
+
+      # Step 5: run local iOS build
+      - name: Run EAS build (local iOS)
+        run: |
+          cd app
+          eas build --platform ios --local --non-interactive
+
+      # Step 6: upload the .ipa as an artifact
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: app/dist/*.ipa
